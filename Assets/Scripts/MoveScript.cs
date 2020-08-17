@@ -4,7 +4,9 @@ using UnityEngine;
 
 public class MoveScript : MonoBehaviour
 {
-    public float spd;
+    public float mspd;
+    public float rspd;
+    public float db = 0.1F;
     Transform playerTransform;
     Rigidbody playerRigid;
     // Start is called before the first frame update
@@ -14,38 +16,71 @@ public class MoveScript : MonoBehaviour
       playerRigid = GetComponent<Rigidbody>();
     }
 
+    float DeadBand(float input)
+    {
+        if(input < db & input > -db)
+        {
+            return 0F;
+        } else
+        {
+            return input;
+        }
+    }
+
+
+    Vector3 rotate(Vector3 vec, float offset)
+    {
+        float tx = vec.x;
+        float tz = vec.z;
+
+        vec.x = tx * Mathf.Cos(offset) - tz * Mathf.Sin(offset);
+        vec.z = - tx * Mathf.Sin(offset) + tz * Mathf.Cos(offset);
+
+        return vec;
+    }
+
+
     // Update is called once per frame
     void Update()
     {
-      Vector3 dir = new Vector3(0,0,0);
-      Vector3 pos;
-      Quaternion rot;
+        Vector3 mdir = new Vector3(DeadBand(Input.GetAxisRaw("Horizontal")), 0, DeadBand(Input.GetAxisRaw("Vertical")));
+        //Debug.Log(mdir.magnitude);
 
-      pos = playerRigid.position;
-      rot = playerRigid.rotation;
+        if (Input.GetKey(KeyCode.LeftShift))
+        {
+            mspd = 10;
+        } else if (Input.GetKey(KeyCode.LeftControl))
+        {
+            mspd = 2.5F;
+        } else
+        {
+            mspd = 4;
+        }
 
-      if(Input.GetKey(KeyCode.D)){
-        dir.x++;
-      }else if(Input.GetKey(KeyCode.A)){
-        dir.x--;
-      }
+        Vector3 mouse_position = new Vector3(Input.mousePosition.x - Screen.width / 2, 0F, -1*(Input.mousePosition.y - Screen.height / 2));
 
-      if(Input.GetKey(KeyCode.W)){
-        dir.z++;
-      }else if(Input.GetKey(KeyCode.S)){
-        dir.z--;
-      }
+        // This line not necessary atm because player is centered on screen. May be needed later
+        Vector3 rdir = rotate(mouse_position - playerRigid.position, Mathf.PI/2);
 
-      pos = pos + dir*Time.deltaTime*spd;
 
-      playerRigid.MovePosition(pos);
+        if (rdir.magnitude > 15)
+        {
+            Quaternion rotation = Quaternion.LookRotation(rdir);
+            //Debug.Log(rotation);
 
-      float ang = Vector3.Angle(playerRigid.position,Input.mousePosition);
+            playerRigid.MoveRotation(rotation);
+        }
 
-      rot[1] = ang;
+        //playerRigid.MoveRotation(Quaternion.Lerp(playerRigid.rotation, rotation, rspd*Time.deltaTime));
 
-      playerRigid.
 
-      playerRigid.MoveRotation(rot);
+
+        playerRigid.MovePosition(playerRigid.position + (mdir.normalized) * Time.deltaTime * mspd);
+
+      //float ang = Vector3.Angle(playerRigid.position, Input.mousePosition);
+
+      //rot[1] = ang;
+
+      //playerRigid.MoveRotation(rot);
     }
 }
